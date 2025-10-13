@@ -1,3 +1,4 @@
+
 const express = require('express');
 const { body } = require('express-validator');
 const auth = require('../middleware/auth');
@@ -11,7 +12,14 @@ const router = express.Router();
 
 // Validation middleware
 const questionValidation = [
-  body('question').trim().isLength({ min: 5, max: 500 }).withMessage('Question must be between 5-500 characters')
+  body('question')
+    .trim()
+    .isLength({ min: 5, max: 500 })
+    .withMessage('Question must be between 5-500 characters'),
+  body('milestoneId')
+    .optional()
+    .isMongoId()
+    .withMessage('Invalid milestone ID')
 ];
 
 // Routes

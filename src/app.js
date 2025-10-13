@@ -56,7 +56,6 @@ app.use('/api/timelines', timelineRoutes);
 app.use('/api/qna', qnaRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/insights', insightRoutes);
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -78,3 +77,4 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 module.exports = app;
+const qnaRoutes = require('./routes/qna');

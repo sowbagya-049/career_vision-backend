@@ -14,7 +14,7 @@ const errorHandler = (err, req, res, next) => {
     return res.status(404).json({
       success: false,
       message,
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Invalid ID format'
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Invalid ID format',
     });
   }
 
@@ -25,22 +25,22 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({
       success: false,
       message,
-      error: process.env.NODE_ENV === 'development' ? err.message : `Duplicate ${field}`
+      error: process.env.NODE_ENV === 'development' ? err.message : `Duplicate ${field}`,
     });
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const errors = Object.values(err.errors).map(val => ({
+    const errors = Object.values(err.errors).map((val) => ({
       field: val.path,
       message: val.message,
-      value: val.value
+      value: val.value,
     }));
-    
+
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: errors
+      errors: errors,
     });
   }
 
@@ -48,14 +48,14 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
-      message: 'Invalid token. Please log in again.'
+      message: 'Invalid token. Please log in again.',
     });
   }
 
   if (err.name === 'TokenExpiredError') {
     return res.status(401).json({
       success: false,
-      message: 'Token expired. Please log in again.'
+      message: 'Token expired. Please log in again.',
     });
   }
 
@@ -63,14 +63,14 @@ const errorHandler = (err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       success: false,
-      message: 'File too large. Maximum size is 10MB.'
+      message: 'File too large. Maximum size is 10MB.',
     });
   }
 
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
-      message: 'Invalid file field. Expected field name is "resume".'
+      message: 'Invalid file field. Expected field name is "resume".',
     });
   }
 
@@ -78,11 +78,14 @@ const errorHandler = (err, req, res, next) => {
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? {
-      stack: err.stack,
-      name: err.name,
-      code: err.code
-    } : undefined
+    error:
+      process.env.NODE_ENV === 'development'
+        ? {
+            stack: err.stack,
+            name: err.name,
+            code: err.code,
+          }
+        : undefined,
   });
 };
 
