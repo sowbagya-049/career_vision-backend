@@ -15,7 +15,7 @@ const resumeRoutes = require('./routes/resumes');
 const timelineRoutes = require('./routes/timelines');
 const qnaRoutes = require('./routes/qna');
 const recommendationRoutes = require('./routes/recommendations');
-const insightsRoutes = require('./routes/insights'); // Should export a Router
+const insightsRoutes = require('./routes/insights');
 
 const app = express();
 
@@ -27,24 +27,29 @@ console.log('🔍 insightsRoutes object:', insightsRoutes);
 app.use(helmet());
 app.use(compression());
 
-// CORS configuration
+// Determine allowed origins based on environment
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [config.frontend.url, 'https://career-vision.netlify.app'] // Add Netlify production URL explicitly
+  : ['http://localhost:4200', 'http://localhost:3000'];
+
+// CORS configuration with dynamic origin
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? config.frontend.url
-    : ['http://localhost:4200', 'http://localhost:3000'],
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin like mobile apps or curl
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy violation: Origin not allowed'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
-
-const corsOptions = {
-  origin: 'https://career-vision.netlify.app', // your frontend URL
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
   message: 'Too many requests from this IP, please try again later.'
 });
