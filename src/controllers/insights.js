@@ -1,6 +1,6 @@
+const Question = require('../models/question');
 const Milestone = require('../models/milestone');
 const Recommendation = require('../models/recommendation');
-const Question = require('../models/question');
 const Resume = require('../models/resume');
 
 // Get career insights
@@ -8,6 +8,8 @@ const getCareerInsights = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const insights = [];
+
+    console.log('📊 Fetching insights for user:', userId);
 
     // Career gap analysis
     const gapInsight = await analyzeCareerGapsInsight(userId);
@@ -29,11 +31,14 @@ const getCareerInsights = async (req, res, next) => {
     const completenessInsight = await analyzeProfileCompleteness(userId);
     if (completenessInsight) insights.push(completenessInsight);
 
+    console.log('✅ Generated', insights.length, 'insights');
+
     res.json({
       success: true,
       data: insights
     });
   } catch (error) {
+    console.error('❌ Get insights error:', error);
     next(error);
   }
 };
@@ -42,6 +47,8 @@ const getCareerInsights = async (req, res, next) => {
 const getAnalyticsData = async (req, res, next) => {
   try {
     const userId = req.user.id;
+
+    console.log('📈 Fetching analytics for user:', userId);
 
     // Career gaps data
     const careerGaps = await getCareerGapsData(userId);
@@ -52,8 +59,10 @@ const getAnalyticsData = async (req, res, next) => {
     // Career growth trend
     const careerGrowthTrend = await getCareerGrowthData(userId);
     
-    // Industry comparison (mock data for demo)
+    // Industry comparison
     const industryComparison = await getIndustryComparisonData(userId);
+
+    console.log('✅ Analytics data prepared');
 
     res.json({
       success: true,
@@ -65,6 +74,7 @@ const getAnalyticsData = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Get analytics error:', error);
     next(error);
   }
 };
@@ -182,11 +192,11 @@ const analyzeSkillsStrength = async (userId) => {
   }
 };
 
-// Analyze recommendation matches
+// Analyze recommendation matches - FIXED to use userId
 const analyzeRecommendationMatch = async (userId) => {
   try {
     const recommendations = await Recommendation.find({
-      user: userId,
+      userId: userId, // ✅ Changed from 'user' to 'userId'
       isActive: true
     });
 
@@ -252,16 +262,10 @@ const analyzeCareerTrend = async (userId) => {
       };
     }
 
-    // Simple trend analysis based on titles and companies
     const hasProgressiveRoles = jobMilestones.some((milestone, index) => {
       if (index === 0) return false;
       const currentTitle = milestone.title.toLowerCase();
       return currentTitle.includes('senior') || currentTitle.includes('lead') || currentTitle.includes('manager');
-    });
-
-    const companySizes = jobMilestones.map(m => {
-      // Mock company size analysis based on company name (in real app, use external API)
-      return Math.random() > 0.5 ? 'large' : 'medium';
     });
 
     if (hasProgressiveRoles) {
@@ -295,19 +299,10 @@ const analyzeProfileCompleteness = async (userId) => {
     
     let completenessScore = 0;
     
-    // Has milestones (30 points)
     if (milestones.length > 0) completenessScore += 30;
-    
-    // Has job experience (25 points)
     if (milestones.some(m => m.type === 'job')) completenessScore += 25;
-    
-    // Has education (20 points)
     if (milestones.some(m => m.type === 'education')) completenessScore += 20;
-    
-    // Has resume uploaded (15 points)
     if (resumes.length > 0) completenessScore += 15;
-    
-    // Has skills (10 points)
     if (milestones.some(m => m.skills && m.skills.length > 0)) completenessScore += 10;
 
     if (completenessScore >= 90) {
@@ -352,13 +347,11 @@ const getCareerGapsData = async (userId) => {
     const gapsData = [];
     const years = [];
 
-    // Generate data for last 5 years
     const currentYear = new Date().getFullYear();
     for (let i = 4; i >= 0; i--) {
       const year = currentYear - i;
       years.push(year);
       
-      // Calculate months active in this year
       let activeMonths = 0;
       
       jobMilestones.forEach(milestone => {
@@ -422,7 +415,6 @@ const getCareerGrowthData = async (userId) => {
   try {
     const milestones = await Milestone.find({ user: userId }).sort({ startDate: 1 });
     
-    // Mock skill and experience level calculation
     const growthData = [];
     let cumulativeSkills = 0;
     let cumulativeExperience = 0;
@@ -431,7 +423,6 @@ const getCareerGrowthData = async (userId) => {
     for (let i = 4; i >= 0; i--) {
       const year = currentYear - i;
       
-      // Count milestones up to this year
       const milestonesUpToYear = milestones.filter(m => 
         new Date(m.startDate).getFullYear() <= year
       );
@@ -462,10 +453,9 @@ const getCareerGrowthData = async (userId) => {
   }
 };
 
-// Get industry comparison data (mock)
+// Get industry comparison data
 const getIndustryComparisonData = async (userId) => {
   try {
-    // Mock industry comparison data
     return [
       { metric: 'Experience Level', user: 75, industry: 65 },
       { metric: 'Skill Diversity', user: 80, industry: 70 },
@@ -479,19 +469,49 @@ const getIndustryComparisonData = async (userId) => {
   }
 };
 
-// Generate career report
+// Generate career report - FIXED to use userId
 const generateReport = async (req, res, next) => {
   try {
     const userId = req.user.id;
     
-    // Get all insights and analytics
-    const insights = await getCareerInsights({ user: { id: userId } }, { json: () => {} });
-    const analytics = await getAnalyticsData({ user: { id: userId } }, { json: () => {} });
+    console.log('📊 Generating career report for user:', userId);
+    
+    // Get all data with error handling
     const milestones = await Milestone.find({ user: userId }).sort({ startDate: -1 });
+    const resumes = await Resume.find({ user: userId });
+    
+    // ✅ FIXED: Use userId instead of user
     const recommendations = await Recommendation.find({ 
-      user: userId, 
+      userId: userId,
       isActive: true 
     }).sort({ matchScore: -1 }).limit(10);
+
+    console.log('📈 Data loaded:', {
+      milestones: milestones.length,
+      resumes: resumes.length,
+      recommendations: recommendations.length
+    });
+
+    // Calculate insights
+    const gapInsight = await analyzeCareerGapsInsight(userId);
+    const skillsInsight = await analyzeSkillsStrength(userId);
+    const matchInsight = await analyzeRecommendationMatch(userId);
+    const trendInsight = await analyzeCareerTrend(userId);
+    const completenessInsight = await analyzeProfileCompleteness(userId);
+
+    const insights = [
+      gapInsight,
+      skillsInsight,
+      matchInsight,
+      trendInsight,
+      completenessInsight
+    ].filter(Boolean);
+
+    console.log('💡 Generated insights:', insights.length);
+
+    const avgScore = insights.length > 0 
+      ? Math.round(insights.reduce((sum, i) => sum + i.score, 0) / insights.length)
+      : 0;
 
     const report = {
       generatedAt: new Date(),
@@ -499,20 +519,30 @@ const generateReport = async (req, res, next) => {
       summary: {
         totalMilestones: milestones.length,
         totalRecommendations: recommendations.length,
-        profileCompleteness: 85, // This would be calculated
-        overallScore: 78
+        resumesUploaded: resumes.length,
+        profileCompleteness: completenessInsight ? completenessInsight.score : 0,
+        overallScore: avgScore
       },
       insights: insights,
       topRecommendations: recommendations.slice(0, 5),
-      careerTimeline: milestones,
-      analytics: analytics
+      careerTimeline: milestones.slice(0, 10),
+      analytics: {
+        careerGaps: await getCareerGapsData(userId),
+        skillsDistribution: await getSkillsDistributionData(userId),
+        careerGrowthTrend: await getCareerGrowthData(userId),
+        industryComparison: await getIndustryComparisonData(userId)
+      }
     };
+
+    console.log('✅ Report generated successfully');
 
     res.json({
       success: true,
       data: report
     });
   } catch (error) {
+    console.error('❌ Report generation error:', error);
+    console.error('Error stack:', error.stack);
     next(error);
   }
 };
