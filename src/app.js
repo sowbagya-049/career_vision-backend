@@ -35,6 +35,13 @@ app.use(cors({
   credentials: true
 }));
 
+
+const corsOptions = {
+  origin: 'https://career-vision.netlify.app', // your frontend URL
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
