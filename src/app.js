@@ -29,7 +29,7 @@ app.use(compression());
 
 // Determine allowed origins based on environment
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [config.FRONTEND_URL, 'https://career-vision.netlify.app'] // Add Netlify production URL explicitly
+  ? [config.FRONTEND_URL, 'https://career-vision.netlify.app','https://careervisiondeploy.vercel.app'] // Add Netlify production URL explicitly
   : ['http://localhost:4200', 'http://localhost:3000'];
 
 // CORS configuration with dynamic origin
