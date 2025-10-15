@@ -1,80 +1,54 @@
 const axios = require('axios');
-const config = require('../config');
+const config = require('../config'); // Ensure your config file exports coursera.apiKey
 
 class CourseraService {
   constructor() {
     this.baseURL = 'https://api.coursera.org/api';
-    //this.apiKey = config.coursera.apiKey;
+    this.apiKey = config.coursera.apiKey;
   }
 
+  // Fetch latest live courses from Coursera API
   async searchCourses(userProfile) {
     try {
-      // Mock Coursera API implementation
-      return this.getMockCourses(userProfile);
+      // Example Courses API endpoint (uses v1 public catalog)
+      const response = await axios.get(`${this.baseURL}/courses.v1`, {
+        params: {
+          q: 'search',
+          query: userProfile.query || userProfile.skills?.join(' ') || 'software',
+          limit: 20,
+          includes: 'partnerIds,instructorIds'
+        },
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      const courses = this.mapCourses(response.data.elements);
+      return courses;
     } catch (error) {
-      console.error('Coursera API error:', error);
-      return [];
+      console.error('Coursera API error:', error.message);
+      throw new Error('Failed to fetch live Coursera courses');
     }
   }
 
-  getMockCourses(userProfile) {
-    const mockCourses = [
-      {
-        id: 'coursera_course_1',
-        source: 'coursera',
-        title: 'Advanced React Development',
-        provider: 'Coursera',
-        instructor: 'John Doe, Meta',
-        description: 'Master advanced React concepts including hooks, context, and performance optimization.',
-        url: 'https://coursera.org/course/1',
-        duration: '6 weeks',
-        level: 'advanced',
-        price: { amount: 49, currency: 'USD', free: false },
-        rating: { score: 4.8, count: 1200 },
-        skills: ['react', 'javascript', 'web development'],
-        tags: ['frontend', 'react', 'advanced']
-      },
-      {
-        id: 'coursera_course_2',
-        source: 'coursera',
-        title: 'Machine Learning for Everyone',
-        provider: 'Coursera',
-        instructor: 'Dr. Jane Smith, Stanford',
-        description: 'Introduction to machine learning concepts and practical applications.',
-        url: 'https://coursera.org/course/2',
-        duration: '8 weeks',
-        level: 'beginner',
-        price: { amount: 0, currency: 'USD', free: true },
-        rating: { score: 4.6, count: 2500 },
-        skills: ['machine learning', 'python', 'data science'],
-        tags: ['ai', 'ml', 'beginner']
-      },
-      {
-        id: 'coursera_course_3',
-        source: 'coursera',
-        title: 'Cloud Computing with AWS',
-        provider: 'Coursera',
-        instructor: 'AWS Team',
-        description: 'Learn to deploy and manage applications on Amazon Web Services.',
-        url: 'https://coursera.org/course/3',
-        duration: '10 weeks',
-        level: 'intermediate',
-        price: { amount: 79, currency: 'USD', free: false },
-        rating: { score: 4.7, count: 1800 },
-        skills: ['aws', 'cloud computing', 'devops'],
-        tags: ['cloud', 'aws', 'infrastructure']
-      }
-    ];
-
-    // Filter based on user interests and current skill gaps
-    return mockCourses.filter(course => 
-      course.skills.some(skill => 
-        userProfile.skills.some(userSkill => 
-          skill.toLowerCase().includes(userSkill.toLowerCase()) ||
-          userSkill.toLowerCase().includes(skill.toLowerCase())
-        )
-      ) || Math.random() > 0.5 // Some randomness for discovery
-    );
+  // Standardize live API data to your internal schema
+  mapCourses(apiCourses) {
+    return apiCourses.map(course => ({
+      id: course.id,
+      source: 'coursera',
+      title: course.name || 'Untitled Course',
+      provider: 'Coursera',
+      instructor: course.instructorIds ? `${course.instructorIds.length} instructor(s)` : 'N/A',
+      description: course.description || 'No description available',
+      url: `https://www.coursera.org/learn/${course.slug || course.id}`,
+      duration: course.estimatedWorkload || 'N/A',
+      level: course.difficulty || 'All levels',
+      price: { amount: 0, currency: 'USD', free: true }, // Most Coursera data does not expose price directly
+      rating: { score: 0, count: 0 }, // Not in basic API payload
+      skills: course.domains?.map(d => d.name) || [],
+      tags: course.courseType ? [course.courseType] : []
+    }));
   }
 }
 

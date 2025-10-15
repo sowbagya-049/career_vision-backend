@@ -13,7 +13,7 @@ async function generateLLMCompletion(prompt) {
     });
 
     return response.data.choices[0].message.content;
-  } catch (error) {
+  } catch (error) {   console.error('Error calling LLM API:', error.message);
     console.error('Error calling LLM API:', error.message);
     throw new Error('LLM service failed');
   }

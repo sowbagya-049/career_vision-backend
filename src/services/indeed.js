@@ -4,58 +4,53 @@ const config = require('../config');
 class IndeedService {
   constructor() {
     this.baseURL = 'https://api.indeed.com/ads';
-    //this.apiKey = config.indeed.apiKey;
+    this.apiKey = config.indeed.apiKey; // Load your Indeed API key from config
   }
 
+  // Real-time job search using Indeed API
   async searchJobs(userProfile) {
     try {
-      // Mock Indeed API implementation
-      return this.getMockJobs(userProfile);
+      // Construct query params based on user profile
+      const params = {
+        q: userProfile.skills?.join(' ') || 'developer',
+        limit: 20,
+        // Add other parameters like location, job_type etc. based on API specs
+        api_key: this.apiKey, // Or use Authorization header if Indeed requires
+      };
+
+      const response = await axios.get(`${this.baseURL}/jobs`, { params });
+
+      if (response.data && response.data.results) {
+        return this.mapJobs(response.data.results);
+      }
+      return [];
     } catch (error) {
-      console.error('Indeed API error:', error);
+      console.error('Indeed API error:', error.message || error);
+      // No fallback; failure returns empty array
       return [];
     }
   }
 
-  getMockJobs(userProfile) {
-    const mockJobs = [
-      {
-        id: 'indeed_job_1',
-        source: 'indeed',
-        title: 'Frontend Developer',
-        company: 'Digital Agency',
-        location: 'Remote',
-        description: 'Looking for a talented frontend developer to join our team. Experience with React and modern CSS required.',
-        url: 'https://indeed.com/jobs/1',
-        salary: { min: 75000, max: 110000, currency: 'USD' },
-        jobType: 'full-time',
-        requirements: ['React', 'CSS', 'JavaScript', 'Responsive design'],
-        skills: ['react', 'css', 'javascript', 'html'],
-        tags: ['remote', 'frontend', 'agency']
+  // Map Indeed API job data to internal job structure
+  mapJobs(apiJobs) {
+    return apiJobs.map(job => ({
+      id: job.jobkey || job.id,
+      source: 'indeed',
+      title: job.jobtitle || 'No title',
+      company: job.company || 'Unknown',
+      location: job.formattedLocation || 'Unknown',
+      description: job.snippet || '',
+      url: job.url || '',
+      salary: {
+        min: job.salaryMin || 0,
+        max: job.salaryMax || 0,
+        currency: job.salaryCurrency || 'USD',
       },
-      {
-        id: 'indeed_job_2',
-        source: 'indeed',
-        title: 'DevOps Engineer',
-        company: 'Cloud Solutions Inc',
-        location: 'Austin, TX',
-        description: 'Seeking a DevOps engineer with experience in AWS, Docker, and Kubernetes.',
-        url: 'https://indeed.com/jobs/2',
-        salary: { min: 100000, max: 140000, currency: 'USD' },
-        jobType: 'full-time',
-        requirements: ['AWS', 'Docker', 'Kubernetes', 'CI/CD'],
-        skills: ['aws', 'docker', 'kubernetes', 'jenkins'],
-        tags: ['devops', 'cloud', 'infrastructure']
-      }
-    ];
-
-    return mockJobs.filter(job => 
-      job.skills.some(skill => 
-        userProfile.skills.some(userSkill => 
-          userSkill.toLowerCase().includes(skill.toLowerCase())
-        )
-      )
-    );
+      jobType: job.jobtype || 'full-time',
+      requirements: job.requirements || [],
+      skills: job.skills || [],
+      tags: job.tags || [],
+    }));
   }
 }
 

@@ -1,59 +1,59 @@
 const axios = require('axios');
+const config = require('../config');
 
 class UnstopService {
   constructor() {
     this.baseURL = 'https://api.unstop.com';
+    this.apiKey = config.unstop.apiKey; // Your Unstop API key here
   }
 
   async searchJobs(userProfile) {
     try {
-      // Mock Unstop API implementation
-      return this.getMockJobs(userProfile);
+      // Example API request params (customize according to actual Unstop API docs)
+      const params = {
+        skills: userProfile.skills?.join(',') || '',
+        limit: 20,
+        // Add other filters like location, jobType, etc. if supported
+      };
+
+      const headers = {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'application/json',
+      };
+
+      const response = await axios.get(`${this.baseURL}/jobs`, { params, headers });
+
+      if (response.data && response.data.jobs) {
+        return this.mapJobs(response.data.jobs);
+      }
+      return [];
     } catch (error) {
-      console.error('Unstop API error:', error);
+      console.error('Unstop API error:', error.response?.data || error.message);
       return [];
     }
   }
 
-  getMockJobs(userProfile) {
-    const mockJobs = [
-      {
-        id: 'unstop_job_1',
-        source: 'unstop',
-        title: 'Software Development Intern',
-        company: 'TechStart',
-        location: 'Bangalore, India',
-        description: 'Internship opportunity for students and recent graduates. Work on real projects with mentorship.',
-        url: 'https://unstop.com/jobs/1',
-        salary: { min: 20000, max: 40000, currency: 'INR' },
-        jobType: 'internship',
-        requirements: ['Programming basics', 'Eagerness to learn', 'Team player'],
-        skills: ['programming', 'java', 'python'],
-        tags: ['internship', 'entry-level', 'mentorship']
-      },
-      {
-        id: 'unstop_job_2',
-        source: 'unstop',
-        title: 'Junior Data Analyst',
-        company: 'DataCorp',
-        location: 'Mumbai, India',
-        description: 'Entry-level position for data enthusiasts. Work with SQL, Python, and visualization tools.',
-        url: 'https://unstop.com/jobs/2',
-        salary: { min: 400000, max: 600000, currency: 'INR' },
-        jobType: 'full-time',
-        requirements: ['SQL', 'Python', 'Data visualization', 'Statistical knowledge'],
-        skills: ['sql', 'python', 'excel', 'statistics'],
-        tags: ['data', 'analytics', 'entry-level']
-      }
-    ];
-
-    return mockJobs.filter(job => 
-      job.skills.some(skill => 
-        userProfile.skills.some(userSkill => 
-          userSkill.toLowerCase().includes(skill.toLowerCase())
-        )
-      )
-    );
+  mapJobs(apiJobs) {
+    return apiJobs.map(job => ({
+      id: job.id,
+      source: 'unstop',
+      title: job.title,
+      company: job.company_name,
+      location: job.location,
+      description: job.description,
+      url: job.url,
+      salary: job.salary
+        ? {
+            min: job.salary.min,
+            max: job.salary.max,
+            currency: job.salary.currency,
+          }
+        : null,
+      jobType: job.job_type,
+      requirements: job.requirements || [],
+      skills: job.skills || [],
+      tags: job.tags || [],
+    }));
   }
 }
 

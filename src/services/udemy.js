@@ -4,77 +4,62 @@ const config = require('../config');
 class UdemyService {
   constructor() {
     this.baseURL = 'https://www.udemy.com/api-2.0';
-    //this.clientId = config.udemy.clientId;
-    //this.clientSecret = config.udemy.clientSecret;
+    this.clientId = config.udemy.clientId; // Your Udemy client ID
+    this.clientSecret = config.udemy.clientSecret; // Your Udemy client secret
+    this.authToken = null;
   }
 
+  // Set authorization token externally or implement OAuth flow to get token
+  setAuthToken(token) {
+    this.authToken = token;
+  }
+
+  // Search courses on Udemy using skills from the user profile
   async searchCourses(userProfile) {
+    if (!this.authToken) {
+      throw new Error('Udemy auth token is not set.');
+    }
+
     try {
-      // Mock Udemy API implementation
-      return this.getMockCourses(userProfile);
+      const params = {
+        page_size: 20,
+        search: userProfile.skills?.join(' ') || '',
+        ordering: '-rating', // Sort by rating desc, change as needed
+      };
+
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        Accept: 'application/json',
+      };
+
+      const response = await axios.get(`${this.baseURL}/courses/`, { params, headers });
+
+      if (response.data && response.data.results) {
+        return this.mapCourses(response.data.results);
+      }
+      return [];
     } catch (error) {
-      console.error('Udemy API error:', error);
+      console.error('Udemy API error:', error.response?.data || error.message);
       return [];
     }
   }
 
-  getMockCourses(userProfile) {
-    const mockCourses = [
-      {
-        id: 'udemy_course_1',
-        source: 'udemy',
-        title: 'Complete JavaScript Bootcamp',
-        provider: 'Udemy',
-        instructor: 'Jonas Schmedtmann',
-        description: 'Master JavaScript from scratch with projects, challenges, and real-world examples.',
-        url: 'https://udemy.com/course/1',
-        duration: '69 hours',
-        level: 'beginner',
-        price: { amount: 89.99, currency: 'USD', free: false },
-        rating: { score: 4.9, count: 15000 },
-        skills: ['javascript', 'web development', 'programming'],
-        tags: ['javascript', 'bootcamp', 'comprehensive']
-      },
-      {
-        id: 'udemy_course_2',
-        source: 'udemy',
-        title: 'Docker and Kubernetes Complete Guide',
-        provider: 'Udemy',
-        instructor: 'Stephen Grider',
-        description: 'Build, test, and deploy Docker applications with Kubernetes.',
-        url: 'https://udemy.com/course/2',
-        duration: '21.5 hours',
-        level: 'intermediate',
-        price: { amount: 84.99, currency: 'USD', free: false },
-        rating: { score: 4.8, count: 8500 },
-        skills: ['docker', 'kubernetes', 'devops'],
-        tags: ['devops', 'containerization', 'orchestration']
-      },
-      {
-        id: 'udemy_course_3',
-        source: 'udemy',
-        title: 'Python for Data Science and Machine Learning',
-        provider: 'Udemy',
-        instructor: 'Jose Portilla',
-        description: 'Learn Python for data analysis, visualization, and machine learning.',
-        url: 'https://udemy.com/course/3',
-        duration: '25 hours',
-        level: 'beginner',
-        price: { amount: 94.99, currency: 'USD', free: false },
-        rating: { score: 4.7, count: 12000 },
-        skills: ['python', 'data science', 'machine learning'],
-        tags: ['python', 'data', 'ml']
-      }
-    ];
-
-    return mockCourses.filter(course => 
-      course.skills.some(skill => 
-        userProfile.skills.some(userSkill => 
-          skill.toLowerCase().includes(userSkill.toLowerCase()) ||
-          userSkill.toLowerCase().includes(skill.toLowerCase())
-        )
-      ) || Math.random() > 0.4
-    );
+  mapCourses(apiCourses) {
+    return apiCourses.map(course => ({
+      id: course.id,
+      source: 'udemy',
+      title: course.title,
+      provider: 'Udemy',
+      instructor: course.visible_instructors?.map(instr => instr.display_name).join(', ') || 'N/A',
+      description: course.headline || '',
+      url: `https://www.udemy.com/course/${course.url_path}`,
+      duration: course.content_length_text || 'N/A',
+      level: course.level || 'all levels',
+      price: { amount: course.price_detail.amount || 0, currency: course.price_detail.currency || 'USD', free: course.is_paid === false },
+      rating: { score: course.avg_rating || 0, count: course.num_reviews || 0 },
+      skills: course.tags || [],
+      tags: course.categories?.map(cat => cat.title) || []
+    }));
   }
 }
 
