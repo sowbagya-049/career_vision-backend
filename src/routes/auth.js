@@ -39,6 +39,7 @@ const registerValidation = [
     .withMessage('Password must contain at least one letter and one number')
 ];
 
+// Login validation
 const loginValidation = [
   body('email')
     .isEmail()

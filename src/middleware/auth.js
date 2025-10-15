@@ -24,7 +24,7 @@ const auth = async (req, res, next) => {
       
       // Get user from token
       const user = await User.findById(decoded.id).select('-password');
-      
+      // Check if user still exists
       if (!user) {
         return res.status(401).json({
           success: false,
