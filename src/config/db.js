@@ -13,7 +13,7 @@ const connectDB = async () => {
     // Mask sensitive parts of the connection string for logging
     const loggedUri = process.env.MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
     console.log('Connection string:', loggedUri);
-    
+    // Mongoose connection options
     const options = {
       useNewUrlParser: true, // Still good practice to include, though often default
       useUnifiedTopology: true, // Still good practice to include, though often default
@@ -58,6 +58,7 @@ const connectDB = async () => {
       }
     });
 
+    // Handle application termination
     process.on('SIGTERM', async () => {
         try {
             await mongoose.connection.close();

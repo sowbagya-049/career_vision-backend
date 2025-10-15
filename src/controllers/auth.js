@@ -28,7 +28,7 @@ const register = async (req, res, next) => {
         errors: errors.array()
       });
     }
-
+    // Extract fields
     const { firstName, lastName, email, password } = req.body;
 
     // Validate required fields
@@ -65,7 +65,7 @@ const register = async (req, res, next) => {
       email: email.toLowerCase().trim(),
       password: password
     };
-
+    // Log user data excluding password
     console.log('Creating user with data:', {
       ...userData,
       password: '[HIDDEN]'
