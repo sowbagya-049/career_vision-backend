@@ -1,6 +1,7 @@
 require('dotenv').config();
 const path = require('path');
 
+// Centralized configuration object
 const config = {
   port: process.env.PORT || 3000,
   mongodb: {
@@ -41,6 +42,7 @@ const config = {
   apiKey: process.env.GEMINI_API_KEY || '',
   },
 
+  // File upload settings
   upload: {
     maxSize: 10 * 1024 * 1024, // 10MB
     allowedTypes: [
